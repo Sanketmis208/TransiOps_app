@@ -49,4 +49,21 @@ void main() {
     expect(restored.driverId, 'driver-1');
     expect(restored.onboardingStatus, 'VERIFIED');
   });
+
+  test('reports a clear error when a required account field is missing', () {
+    expect(
+      () => AppUser.fromJson({
+        'name': 'Raven Kumar',
+        'email': 'driver@transitops.in',
+        'role': 'DRIVER',
+      }),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('id'),
+        ),
+      ),
+    );
+  });
 }

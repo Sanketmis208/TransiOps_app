@@ -19,6 +19,7 @@ void main() {
         expect(request.method, 'POST');
         expect(request.url.path, endsWith('/driver/me/onboarding'));
         expect(request.headers['authorization'], 'Bearer driver-token');
+        expect(request.headers['x-transitops-client'], 'mobile');
         expect(
           request.headers['ngrok-skip-browser-warning'],
           'transitops-mobile',
@@ -55,19 +56,44 @@ void main() {
     expect((result['ocr'] as Map<String, dynamic>)['confidence'], 82);
   });
 
-  test('adds the ngrok bypass header to JSON requests', () async {
+  test(
+    'identifies JSON requests as mobile and bypasses ngrok warning',
+    () async {
+      final client = ApiClient(
+        httpClient: MockClient((request) async {
+          expect(
+            request.headers['ngrok-skip-browser-warning'],
+            'transitops-mobile',
+          );
+          expect(request.headers['x-transitops-client'], 'mobile');
+          return http.Response('{"status":"ok"}', 200);
+        }),
+      );
+
+      final result = await client.get('/health') as Map<String, dynamic>;
+
+      expect(result['status'], 'ok');
+    },
+  );
+
+  test('preserves structured backend error codes for tracking UX', () async {
     final client = ApiClient(
-      httpClient: MockClient((request) async {
-        expect(
-          request.headers['ngrok-skip-browser-warning'],
-          'transitops-mobile',
-        );
-        return http.Response('{"status":"ok"}', 200);
-      }),
+      httpClient: MockClient(
+        (_) async => http.Response(
+          '{"code":"LOCATION_TIMESTAMP_INVALID","message":"Clock mismatch"}',
+          422,
+        ),
+      ),
     );
 
-    final result = await client.get('/health') as Map<String, dynamic>;
-
-    expect(result['status'], 'ok');
+    await expectLater(
+      client.post('/driver/me/trips/trip-1/locations', {'points': []}),
+      throwsA(
+        isA<ApiException>()
+            .having((error) => error.statusCode, 'status', 422)
+            .having((error) => error.code, 'code', 'LOCATION_TIMESTAMP_INVALID')
+            .having((error) => error.message, 'message', 'Clock mismatch'),
+      ),
+    );
   });
 }

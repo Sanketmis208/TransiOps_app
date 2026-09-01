@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:transi_ops_app/main.dart' as app;
@@ -6,28 +7,30 @@ import 'package:transi_ops_app/main.dart' as app;
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('manager signs in and sees live fleet data', (tester) async {
+  testWidgets('login screen exposes operations and driver entry points', (
+    tester,
+  ) async {
+    await const FlutterSecureStorage().deleteAll();
     SharedPreferences.setMockInitialValues({});
     await app.main();
+    await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
 
     expect(find.text('Run your fleet from anywhere.'), findsOneWidget);
-    await tester.ensureVisible(find.text('Sign in securely'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Sign in securely'));
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle(const Duration(milliseconds: 500));
+    expect(find.text('Operations'), findsOneWidget);
+    expect(find.text('Driver'), findsOneWidget);
+    expect(find.text('Work email'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
 
-    expect(find.text('Fleet overview'), findsOneWidget);
-    expect(find.text('Active vehicles'), findsOneWidget);
-
-    await tester.tap(find.text('Fleet'));
+    await tester.tap(find.text('Driver'));
     await tester.pumpAndSettle();
-    expect(find.text('Vehicles'), findsOneWidget);
-
-    await tester.tap(find.text('More'));
-    await tester.pumpAndSettle();
-    expect(find.text('More operations'), findsOneWidget);
-    expect(find.text('Connected API'), findsNothing);
+    expect(find.text('DRIVER ACCESS'), findsOneWidget);
+    expect(find.text('Start your assigned journey.'), findsOneWidget);
+    expect(
+      find.text(
+        'Use the driver credentials issued by your company. Location never starts until you explicitly consent.',
+      ),
+      findsOneWidget,
+    );
   });
 }

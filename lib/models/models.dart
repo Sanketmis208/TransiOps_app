@@ -49,10 +49,10 @@ class AppUser {
   final List<String> allowedModules;
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    email: json['email'] as String,
-    role: UserRole.fromApi(json['role'] as String),
+    id: _requiredString(json, 'id'),
+    name: _requiredString(json, 'name'),
+    email: _requiredString(json, 'email'),
+    role: UserRole.fromApi(_requiredString(json, 'role')),
     organizationId: json['organizationId']?.toString() ?? '',
     organizationName: json['organizationName']?.toString() ?? '',
     mustChangePassword: json['mustChangePassword'] as bool? ?? false,
@@ -65,6 +65,14 @@ class AppUser {
         .map((module) => module.toString())
         .toList(),
   );
+
+  static String _requiredString(Map<String, dynamic> json, String key) {
+    final value = json[key]?.toString().trim();
+    if (value == null || value.isEmpty) {
+      throw FormatException('Account response is missing $key');
+    }
+    return value;
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -288,6 +296,22 @@ class Trip {
     fuelConsumedL: json['fuelConsumedL'] == null
         ? null
         : number(json['fuelConsumedL']),
+  );
+
+  Trip copyWith({String? status}) => Trip(
+    id: id,
+    tripNo: tripNo,
+    source: source,
+    destination: destination,
+    cargoWeightKg: cargoWeightKg,
+    plannedDistanceKm: plannedDistanceKm,
+    revenue: revenue,
+    status: status ?? this.status,
+    vehicle: vehicle,
+    driver: driver,
+    createdAt: createdAt,
+    finalOdometerKm: finalOdometerKm,
+    fuelConsumedL: fuelConsumedL,
   );
 }
 

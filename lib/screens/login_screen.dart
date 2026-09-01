@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _password = TextEditingController();
   bool _obscure = true;
   bool _createCompany = false;
+  bool _driverSignIn = false;
 
   @override
   void dispose() {
@@ -40,7 +41,11 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _password.text,
       );
     } else {
-      await session.login(email: _email.text, password: _password.text);
+      await session.login(
+        email: _email.text,
+        password: _password.text,
+        driverLogin: _driverSignIn,
+      );
     }
   }
 
@@ -48,6 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
     context.read<SessionController>().clearError();
     setState(() {
       _createCompany = createCompany;
+      if (createCompany) _driverSignIn = false;
       _password.clear();
     });
   }
@@ -124,8 +130,34 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 30),
+                        if (!_createCompany) ...[
+                          SegmentedButton<bool>(
+                            segments: const [
+                              ButtonSegment(
+                                value: false,
+                                icon: Icon(Icons.business_outlined),
+                                label: Text('Operations'),
+                              ),
+                              ButtonSegment(
+                                value: true,
+                                icon: Icon(Icons.badge_outlined),
+                                label: Text('Driver'),
+                              ),
+                            ],
+                            selected: {_driverSignIn},
+                            onSelectionChanged: (selection) {
+                              context.read<SessionController>().clearError();
+                              setState(() => _driverSignIn = selection.first);
+                            },
+                          ),
+                          const SizedBox(height: 22),
+                        ],
                         Text(
-                          _createCompany ? 'OWNER ONBOARDING' : 'WELCOME BACK',
+                          _createCompany
+                              ? 'OWNER ONBOARDING'
+                              : _driverSignIn
+                              ? 'DRIVER ACCESS'
+                              : 'WELCOME BACK',
                           style: TextStyle(
                             color: AppColors.orange,
                             fontWeight: FontWeight.w800,
@@ -136,6 +168,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           _createCompany
                               ? 'Lead your fleet.'
+                              : _driverSignIn
+                              ? 'Start your assigned journey.'
                               : 'Run your fleet from anywhere.',
                           style: Theme.of(context).textTheme.headlineLarge,
                         ),
@@ -143,6 +177,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           _createCompany
                               ? 'Set up the transport company. This first account becomes its protected Owner.'
+                              : _driverSignIn
+                              ? 'Use the driver credentials issued by your company. Location never starts until you explicitly consent.'
                               : 'Sign in with the same operations account used on the TransitOps website.',
                           style: Theme.of(context).textTheme.bodyLarge
                               ?.copyWith(color: AppColors.muted),

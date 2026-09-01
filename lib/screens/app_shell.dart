@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../core/app_theme.dart';
 import '../core/session_controller.dart';
 import '../widgets/common.dart';
+import '../widgets/notification_bell.dart';
 import 'dashboard_screen.dart';
 import 'drivers_screen.dart';
 import 'more_screen.dart';
@@ -50,6 +51,7 @@ class _AppShellState extends State<AppShell> {
           ],
         ),
         actions: [
+          const NotificationBell(),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: IconButton(

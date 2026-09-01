@@ -7,10 +7,11 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 class ApiException implements Exception {
-  const ApiException(this.message, {this.statusCode});
+  const ApiException(this.message, {this.statusCode, this.code});
 
   final String message;
   final int? statusCode;
+  final String? code;
 
   @override
   String toString() => message;
@@ -52,6 +53,7 @@ class ApiClient {
     final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'))
       ..headers.addAll({
         'Accept': 'application/json',
+        'X-TransitOps-Client': 'mobile',
         'ngrok-skip-browser-warning': 'transitops-mobile',
         if (token != null) 'Authorization': 'Bearer $token',
       })
@@ -97,6 +99,7 @@ class ApiClient {
       Uri.parse('$baseUrl$path'),
       headers: {
         'Accept': 'text/csv',
+        'X-TransitOps-Client': 'mobile',
         'ngrok-skip-browser-warning': 'transitops-mobile',
         if (token != null) 'Authorization': 'Bearer $token',
       },
@@ -116,6 +119,7 @@ class ApiClient {
     final headers = <String, String>{
       'Accept': 'application/json',
       'Content-Type': 'application/json',
+      'X-TransitOps-Client': 'mobile',
       'ngrok-skip-browser-warning': 'transitops-mobile',
       if (token != null) 'Authorization': 'Bearer $token',
     };
@@ -162,11 +166,13 @@ class ApiClient {
   dynamic _decodeJson(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       var message = 'Request failed (${response.statusCode})';
+      String? code;
       try {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         message = decoded['message']?.toString() ?? message;
+        code = decoded['code']?.toString();
       } catch (_) {}
-      throw ApiException(message, statusCode: response.statusCode);
+      throw ApiException(message, statusCode: response.statusCode, code: code);
     }
     if (response.statusCode == 204 || response.body.isEmpty) return null;
     try {

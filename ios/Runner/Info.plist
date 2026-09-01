@@ -17,6 +17,15 @@
 	<string>TransitOps uses the camera to capture your profile photo and driving licence.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>TransitOps uses selected photos for your driver profile and licence verification.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>TransitOps uses your precise location only after you start tracking an assigned trip, for dispatch visibility, safety and ETA coordination.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>TransitOps continues sharing location for your active assigned trip while the screen is locked or another app is open. Sharing stops when you stop it or operations ends the trip.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>remote-notification</string>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

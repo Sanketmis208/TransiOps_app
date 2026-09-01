@@ -10,6 +10,10 @@ import '../core/app_theme.dart';
 import '../core/session_controller.dart';
 import '../models/models.dart';
 import '../widgets/common.dart';
+import '../widgets/notification_bell.dart';
+import '../features/driver_trips/models/driver_trip.dart';
+import '../features/live_tracking/controllers/trip_tracking_controller.dart';
+import '../features/live_tracking/presentation/live_trip_screen.dart';
 
 class DriverDashboardScreen extends StatefulWidget {
   const DriverDashboardScreen({super.key, required this.initialProfile});
@@ -29,6 +33,15 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen> {
   void initState() {
     super.initState();
     _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TripTrackingController>().startVisiblePolling();
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<TripTrackingController>().stopVisiblePolling();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -82,14 +95,24 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final dashboard = _dashboard;
+    final tracking = context.watch<TripTrackingController>();
     final profile = dashboard?.profile ?? widget.initialProfile;
-    final activeTrip = dashboard?.trips
-        .where((trip) => trip.status == 'DISPATCHED')
+    final syncedActiveTrip = tracking.assignments
+        .where((trip) => trip.isTrackable)
         .firstOrNull;
+    final activeTrip =
+        syncedActiveTrip?.trip ??
+        dashboard?.trips
+            .where(
+              (trip) =>
+                  trip.status == 'DISPATCHED' || trip.status == 'IN_PROGRESS',
+            )
+            .firstOrNull;
     return Scaffold(
       appBar: GlassAppBar(
         title: const Text('Driver workspace'),
         actions: [
+          const NotificationBell(),
           IconButton(
             tooltip: 'Sign out',
             onPressed: _busy ? null : context.read<SessionController>().logout,
@@ -116,7 +139,19 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen> {
                 child: Center(child: CircularProgressIndicator()),
               )
             else ...[
-              _TripCard(trip: activeTrip),
+              _TripCard(
+                trip: activeTrip,
+                onTrack: activeTrip == null
+                    ? null
+                    : () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => LiveTripScreen(
+                            trip: DriverTrip(trip: activeTrip),
+                          ),
+                        ),
+                      ),
+              ),
               const SizedBox(height: 16),
               GlassCard(
                 child: Padding(
@@ -172,9 +207,10 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen> {
 }
 
 class _TripCard extends StatelessWidget {
-  const _TripCard({this.trip});
+  const _TripCard({this.trip, this.onTrack});
 
   final Trip? trip;
+  final VoidCallback? onTrack;
 
   @override
   Widget build(BuildContext context) => GlassCard(
@@ -201,7 +237,7 @@ class _TripCard extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    const StatusBadge('DISPATCHED'),
+                    StatusBadge(trip!.status),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -210,6 +246,16 @@ class _TripCard extends StatelessWidget {
                 Text(
                   '${trip!.vehicle.name} · ${trip!.vehicle.registrationNo}',
                   style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 14),
+                FilledButton.icon(
+                  onPressed: onTrack,
+                  icon: const Icon(Icons.my_location),
+                  label: Text(
+                    trip!.status == 'IN_PROGRESS'
+                        ? 'Open live tracking'
+                        : 'Start live trip tracking',
+                  ),
                 ),
               ],
             ),
@@ -299,7 +345,9 @@ class _ReceiptExpenseSheetState extends State<_ReceiptExpenseSheet> {
   void initState() {
     super.initState();
     final active = widget.trips
-        .where((trip) => trip.status == 'DISPATCHED')
+        .where(
+          (trip) => trip.status == 'DISPATCHED' || trip.status == 'IN_PROGRESS',
+        )
         .firstOrNull;
     _vehicleId = (active ?? widget.trips.first).vehicle.id;
   }
