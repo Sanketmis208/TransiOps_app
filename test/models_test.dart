@@ -21,9 +21,32 @@ void main() {
   });
 
   test('maps every API role to a user-facing label', () {
+    expect(UserRole.fromApi('OWNER').label, 'Company Owner');
+    expect(UserRole.fromApi('ADMIN').label, 'Administrator');
     expect(UserRole.fromApi('FLEET_MANAGER').label, 'Fleet Manager');
     expect(UserRole.fromApi('DISPATCHER').label, 'Dispatcher');
     expect(UserRole.fromApi('SAFETY_OFFICER').label, 'Safety Officer');
     expect(UserRole.fromApi('FINANCIAL_ANALYST').label, 'Financial Analyst');
+    expect(UserRole.fromApi('DRIVER').label, 'Driver');
+  });
+
+  test('round-trips the cached driver session', () {
+    final user = AppUser.fromJson({
+      'id': 'user-1',
+      'name': 'Raven Kumar',
+      'email': 'driver@transitops.in',
+      'role': 'DRIVER',
+      'organizationId': 'org-1',
+      'organizationName': 'TransitOps',
+      'driverId': 'driver-1',
+      'onboardingStatus': 'VERIFIED',
+      'mustChangePassword': false,
+    });
+
+    final restored = AppUser.fromJson(user.toJson());
+
+    expect(restored.role, UserRole.driver);
+    expect(restored.driverId, 'driver-1');
+    expect(restored.onboardingStatus, 'VERIFIED');
   });
 }
