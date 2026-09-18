@@ -20,3 +20,5 @@ macOS. Start the backend before signing in.
 flutter analyze
 flutter test
 ```
+
+Okay so now the project is live.
